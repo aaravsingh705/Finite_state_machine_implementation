@@ -1,0 +1,33 @@
+module test_cyclic_lamp;
+
+  reg clk, reset;
+  wire [2:0] light;
+
+  cyclic_lamp uut (
+    .clk(clk),
+    .reset(reset),
+    .light(light)
+  );
+
+  // Clock generation
+  initial begin
+    clk = 0;
+    forever #5 clk = ~clk;
+  end
+
+  // Apply reset and simulate
+  initial begin
+    reset = 1;
+    #10 reset = 0;
+    #200 $finish;
+  end
+
+  // Monitor output
+  always @(posedge clk) begin
+    $display("Time = %3d | Light = %b (%s)", $time, light,
+      (light == 3'b100) ? "RED" :
+      (light == 3'b010) ? "GREEN" :
+      (light == 3'b001) ? "YELLOW" : "UNKNOWN");
+  end
+
+endmodule

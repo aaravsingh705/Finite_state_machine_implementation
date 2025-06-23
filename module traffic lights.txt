@@ -1,0 +1,64 @@
+module cyclic_lamp (
+  input clk,
+  input reset,
+  output reg [2:0] light
+);
+
+  // State Encoding
+  parameter S0 = 2'd0,  // RED
+            S1 = 2'd1,  // GREEN
+            S2 = 2'd2;  // YELLOW
+
+  parameter RED    = 3'b100;
+  parameter GREEN  = 3'b010;
+  parameter YELLOW = 3'b001;
+
+  // Duration (in clock cycles)
+  parameter RED_TIME    = 5;
+  parameter GREEN_TIME  = 3;
+  parameter YELLOW_TIME = 2;
+
+  // State registers
+  reg [1:0] PS, NS;
+  reg [3:0] timer;
+
+  // State Register (sequential logic)
+  always @(posedge clk or posedge reset) begin
+    if (reset) begin
+      PS <= S0;
+      timer <= RED_TIME;
+    end else begin
+      if (timer == 0) begin
+        case (PS)
+          S0: timer <= YELLOW_TIME;
+          S2: timer <= GREEN_TIME;
+          S1: timer <= RED_TIME;
+        endcase
+        PS <= NS;
+      end else begin
+        timer <= timer - 1;
+      end
+    end
+  end
+
+  // Next State Logic
+  always @(*) begin
+    case (PS)
+      S0: NS = S2;  // RED → YELLOW
+      S2: NS = S1;  // YELLOW → GREEN
+      S1: NS = S0;  // GREEN → RED
+      default: NS = S0;
+    endcase
+  end
+
+  // Output Logic
+  always @(*) begin
+    case (PS)
+      S0: light = RED;
+      S1: light = GREEN;
+      S2: light = YELLOW;
+      default: light = RED;
+    endcase
+  end
+
+endmodule
