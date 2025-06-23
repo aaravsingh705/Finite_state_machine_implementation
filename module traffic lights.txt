@@ -13,6 +13,7 @@ module cyclic_lamp (
   parameter GREEN  = 3'b010;
   parameter YELLOW = 3'b001;
 
+
   // Duration (in clock cycles)
   parameter RED_TIME    = 5;
   parameter GREEN_TIME  = 3;
@@ -30,9 +31,9 @@ module cyclic_lamp (
     end else begin
       if (timer == 0) begin
         case (PS)
-          S0: timer <= YELLOW_TIME;
-          S2: timer <= GREEN_TIME;
+          S0: timer <= GREEN_TIME;
           S1: timer <= RED_TIME;
+          S2: timer <= YELLOW_TIME;
         endcase
         PS <= NS;
       end else begin
@@ -44,9 +45,9 @@ module cyclic_lamp (
   // Next State Logic
   always @(*) begin
     case (PS)
-      S0: NS = S2;  // RED → YELLOW
-      S2: NS = S1;  // YELLOW → GREEN
-      S1: NS = S0;  // GREEN → RED
+      S0: NS = S1;  //
+      S1: NS = S2;  // 
+      S2: NS = S0;  //
       default: NS = S0;
     endcase
   end
