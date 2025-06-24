@@ -1,0 +1,66 @@
+`timescale 1ns / 1ps
+
+module GCD_test;
+
+    reg [15:0] data_in;
+    reg clk, start;
+    reg [15:0] A, B;
+
+    wire done;
+    wire gt, lt, eq;
+    wire ldA, ldB, sel1, sel2, sel_in;
+
+    // Instantiate Datapath using dot-style
+    GCD_datapath DP (
+        .gt(gt),
+        .lt(lt),
+        .eq(eq),
+        .ldA(ldA),
+        .ldB(ldB),
+        .sel1(sel1),
+        .sel2(sel2),
+        .sel_in(sel_in),
+        .data_in(data_in),
+        .clk(clk)
+    );
+
+    // Instantiate Controller using dot-style
+    controller CON (
+        .ldA(ldA),
+        .ldB(ldB),
+        .sel1(sel1),
+        .sel2(sel2),
+        .sel_in(sel_in),
+        .done(done),
+        .clk(clk),
+        .lt(lt),
+        .gt(gt),
+        .eq(eq),
+        .start(start)
+    );
+
+    // Clock generation
+    initial begin
+        clk = 1'b0;
+        forever #5 clk = ~clk;
+    end
+
+    // Stimulus
+    initial begin
+        start = 1'b0;
+        #3  start = 1'b1;
+        #1000 $finish;
+    end
+
+    // Apply inputs
+    initial begin
+        #12 data_in = 143;  // A
+        #10 data_in = 78;   // B
+    end
+
+    // Monitor outputs (both Aout and Bout shown)
+    initial begin
+        $monitor($time, " A = %d | B = %d | Done = %b", DP.Aout, DP.Bout, done);
+    end
+
+endmodule

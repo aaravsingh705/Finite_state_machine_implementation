@@ -1,0 +1,216 @@
+`timescale 1ns / 1ps
+
+// =================== Datapath Top ===================
+module GCD_datapath (
+    output gt, lt, eq,
+    input ldA, ldB, sel1, sel2, sel_in,
+    input [15:0] data_in,
+    input clk
+);
+
+    wire [15:0] Aout, Bout, X, Y, Bus, SubOut;
+
+    PIPO A (Aout, Bus, ldA, clk);
+    PIPO B (Bout, Bus, ldB, clk);
+    MUX MUX_in1 (X, Aout, Bout, sel1);
+    MUX MUX_in2 (Y, Aout, Bout, sel2);
+    MUX MUX_load (Bus, SubOut, data_in, sel_in);
+    SUB SB (SubOut, X, Y);
+    COMPARE COMP (lt, gt, eq, Aout, Bout);
+
+endmodule
+
+// =================== PIPO Register ===================
+module PIPO (
+    output reg [15:0] data_out,
+    input [15:0] data_in,
+    input load, clk
+);
+
+    always @(posedge clk)
+    begin
+        if (load)
+            data_out <= data_in;
+    end
+
+endmodule
+
+// =================== 2-input MUX ===================
+module MUX (
+    output [15:0] out,
+    input [15:0] in0, in1,
+    input sel
+);
+
+    assign out = sel ? in1 : in0;
+
+endmodule
+
+// =================== Subtractor ===================
+module SUB (
+    output reg [15:0] out,
+    input [15:0] in1, in2
+);
+
+    always @(*)
+    begin
+        out = in1 - in2;
+    end
+
+endmodule
+
+// =================== Comparator ===================
+module COMPARE (
+    output lt, gt, eq,
+    input [15:0] data1, data2
+);
+
+    assign lt = (data1 < data2);
+    assign gt = (data1 > data2);
+    assign eq = (data1 == data2);
+
+endmodule
+
+// =================== Controller FSM ===================
+module controller (
+    output reg ldA, ldB, sel1, sel2, sel_in, done,
+    input clk, lt, gt, eq, start
+);
+
+    reg [2:0] state;
+
+    parameter S0 = 3'b000,
+              S1 = 3'b001,
+              S2 = 3'b010,
+              S3 = 3'b011,
+              S4 = 3'b100,
+              S5 = 3'b101;
+
+    // Sequential State Transitions
+    always @(posedge clk)
+    begin
+        case (state)
+            S0: if (start) state <= S1;
+            S1: state <= S2;
+            S2: if (eq) state <= S5;
+                else if (lt) state <= S3;
+                else if (gt) state <= S4;
+            S3: if (eq) state <= S5;
+                else if (lt) state <= S3;
+                else if (gt) state <= S4;
+            S4: if (eq) state <= S5;
+                else if (lt) state <= S3;
+                else if (gt) state <= S4;
+            S5: state <= S5;
+            default: state <= S0;
+        endcase
+    end
+
+    // Output logic
+    always @(state)
+    begin
+        // Default all to 0
+        ldA = 0; ldB = 0;
+        sel1 = 0; sel2 = 0;
+        sel_in = 0; done = 0;
+
+        case (state)
+            S0:
+            begin
+                sel_in = 1;
+                ldA = 1;
+                ldB = 0;
+                done = 0;
+            end
+
+            S1:
+            begin
+                sel_in = 1;
+                ldA = 0;
+                ldB = 1;
+            end
+
+            S2:
+            begin
+                if (eq)
+                    done = 1;
+                else if (lt)
+                begin
+                    sel1 = 1;
+                    sel2 = 0;
+                    sel_in = 0;
+                    ldA = 0;
+                    ldB = 1;
+                end
+                else if (gt)
+                begin
+                    sel1 = 0;
+                    sel2 = 1;
+                    sel_in = 0;
+                    ldA = 1;
+                    ldB = 0;
+                end
+            end
+
+            S3:
+            begin
+                if (eq)
+                    done = 1;
+                else if (lt)
+                begin
+                    sel1 = 1;
+                    sel2 = 0;
+                    sel_in = 0;
+                    ldA = 0;
+                    ldB = 1;
+                end
+                else if (gt)
+                begin
+                    sel1 = 0;
+                    sel2 = 1;
+                    sel_in = 0;
+                    ldA = 1;
+                    ldB = 0;
+                end
+            end
+
+            S4:
+            begin
+                if (eq)
+                    done = 1;
+                else if (lt)
+                begin
+                    sel1 = 1;
+                    sel2 = 0;
+                    sel_in = 0;
+                    ldA = 0;
+                    ldB = 1;
+                end
+                else if (gt)
+                begin
+                    sel1 = 0;
+                    sel2 = 1;
+                    sel_in = 0;
+                    ldA = 1;
+                    ldB = 0;
+                end
+            end
+
+            S5:
+            begin
+                done = 1;
+                sel1 = 0;
+                sel2 = 0;
+                ldA = 0;
+                ldB = 0;
+            end
+
+            default:
+            begin
+                ldA = 0;
+                ldB = 0;
+            end
+        endcase
+    end
+
+endmodule
