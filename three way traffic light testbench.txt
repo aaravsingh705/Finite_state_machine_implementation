@@ -1,0 +1,82 @@
+`timescale 1ns / 1ps
+
+module tb_Traffic_Light_Controller;
+
+    // Testbench signals
+    reg clk;
+    reg rst;
+    wire [2:0] light_M1;
+    wire [2:0] light_S;
+    wire [2:0] light_MT;
+    wire [2:0] light_M2;
+
+    // Instantiate the DUT
+    Traffic_Light_Controller dut (
+        .clk(clk),
+        .rst(rst),
+        .light_M1(light_M1),
+        .light_S(light_S),
+        .light_MT(light_MT),
+        .light_M2(light_M2)
+    );
+
+    // Clock generation
+    initial
+    begin
+        clk = 0;
+    end
+
+    always
+    begin
+        #5 clk = ~clk;
+    end
+
+    // Stimulus
+    initial
+    begin
+        rst = 1;
+
+        #20
+        rst = 0;
+
+        #300
+        $finish;
+    end
+
+    // Monitor with color labels (case used inside always block)
+    always @(light_M1, light_M2, light_MT, light_S)
+    begin
+        $display("Time: %0t", $time);
+
+        case (light_M1)
+            3'b100: $display("M1: RED   ");
+            3'b010: $display("M1: YELLOW");
+            3'b001: $display("M1: GREEN ");
+            default: $display("M1: OFF   ");
+        endcase
+
+        case (light_M2)
+            3'b100: $display("M2: RED   ");
+            3'b010: $display("M2: YELLOW");
+            3'b001: $display("M2: GREEN ");
+            default: $display("M2: OFF   ");
+        endcase
+
+        case (light_MT)
+            3'b100: $display("MT: RED   ");
+            3'b010: $display("MT: YELLOW");
+            3'b001: $display("MT: GREEN ");
+            default: $display("MT: OFF   ");
+        endcase
+
+        case (light_S)
+            3'b100: $display("S: RED   ");
+            3'b010: $display("S: YELLOW");
+            3'b001: $display("S: GREEN ");
+            default: $display("S: OFF   ");
+        endcase
+
+        $display("----------------------------------------");
+    end
+
+endmodule
